@@ -60,28 +60,34 @@ def print_output(start_time, end_time, size):
 def main():
 
     parser = argparse.ArgumentParser(description="Talk to EEPROM")
-    parser.add_argument("action", metavar='action', type=str,
-        help="""Action: "read" or "write" """)
-    parser.add_argument("--serial", metavar='sd', type=str,
-        help="Serial port, e.g. /dev/ttyACM0")
-    parser.add_argument("--file", metavar='fd', type=str,
-        help="File device e.g. ~/romdump")
+    parser.add_argument("--if", metavar='inputfile', type=str,
+        help="Input file")
+    parser.add_argument("--of", metavar='outputfile', type=str,
+        help="Output file")
+    parser.add_argument("--erase", metavar='chipdevice', type=str,
+        help="Device file to erase")
     args = parser.parse_args()
     args = vars(args) 
-
-    if args["action"] and (args["serial"] or args["file"]):
-        ei = eedd.EepromInterface(args["serial"], 57600)
-        if args["action"] == "read":
-            if args["file"]:
-                read_to_file(ei, args["file"])
-            else:
-                read_to_stdout(ei)
-        elif args["action"] == "write":
-            write_from_file(ei, args["file"])
-        elif args["action"] == "fast_write":
-            fast_write_from_file(ei, args["file"])
-        elif args["action"] == "clear":
-            ei.clear_chip()
+    
+    if args["if"] and args["of"]:
+        if args["if"].startswith("/dev/"):
+            # Looks like we're reading from EEPROM to a file
+            ei = eedd.EepromInterface(args["if"], 57600)
+            read_to_file(ei, args["of"])
+        elif args["of"].startswith("/dev/"):
+            # Looks like we're writing from a file to EEPROM
+            ei = eedd.EepromInterface(args["of"], 57600)
+            fast_write_from_file(ei, args["if"])
+        else:
+            # Buh?
+            print "Neither if nor of look like a serial device?"
+    elif args["if"] and args["if"].startswith("/dev/"):
+        # Looks like we're reading from EEPROM to stdout
+        ei = eedd.EepromInterface(args["if"], 57600)
+        read_to_stdout(ei)
+    elif args["erase"] and args["erase"].startswith("/dev/"):
+        ei = eedd.EepromInterface(args["erase"], 57600)
+        ei.clear_chip()
 
 if __name__ == "__main__":
     main()
