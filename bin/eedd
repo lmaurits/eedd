@@ -80,6 +80,8 @@ def main():
         default=0, help="Skip over BYTES bytes at input")
     parser.add_argument("--count", metavar='BYTES', type=int,
         default=0x2000, help="Transfer only BYTES bytes")
+    parser.add_argument("--bs", metavar='BYTES', type=int,
+        default=64, help="Use blocksize of BYTES when communicating with serial device")
     parser.add_argument("--erase", metavar='chipdevice', type=str,
         help="Device file to erase")
     args = parser.parse_args()
@@ -90,19 +92,19 @@ def main():
             # Looks like we're reading from EEPROM to a file
             ei = eedd.EepromInterface(args["if"], 57600)
             with open(args["of"], "wb") as fp:
-                read_to_file(ei, fp, skip=args["skip"], seek=args["seek"], count=args["count"])
+                read_to_file(ei, fp, skip=args["skip"], seek=args["seek"], count=args["count"], blocksize=args["bs"])
         elif args["of"].startswith("/dev/"):
             # Looks like we're writing from a file to EEPROM
             ei = eedd.EepromInterface(args["of"], 57600)
             with open(args["if"], "rb") as fp:
-                write_from_file(ei, fp, skip=args["skip"], seek=args["seek"], count=args["count"])
+                write_from_file(ei, fp, skip=args["skip"], seek=args["seek"], count=args["count"], blocksize=args["bs"])
         else:
             # Buh?
             print "Neither if nor of look like a serial device?"
     elif args["if"] and args["if"].startswith("/dev/"):
         # Looks like we're reading from EEPROM to stdout
         ei = eedd.EepromInterface(args["if"], 57600)
-        read_to_file(ei, sys.stdout, seek=args["seek"], count=args["count"])
+        read_to_file(ei, sys.stdout, seek=args["seek"], count=args["count"], blocksize=args["bs"])
     elif args["erase"] and args["erase"].startswith("/dev/"):
         ei = eedd.EepromInterface(args["erase"], 57600)
         erase_chip(ei)
