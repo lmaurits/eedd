@@ -6,24 +6,22 @@ import time
 
 import eedd
 
-def read_to_file(ei, filename):
+def read_to_file(ei, fp, skip=0, seek=0, count=0x2000, blocksize=128):
     
-    start_time = time.time() 
-    with open(filename, "wb") as fp:
-        for address in range(0,0x2000,128):
-            fp.write(ei.read_bytes(address, 128))
+    start_time = time.time()
+    read = 0
+    address = skip
+    if seek:
+        fp.seek(seek)
+    while read < count:
+        remainder = count - read
+        toread = min(remainder, blocksize)
+        fp.write(ei.read_bytes(address, toread))
+        read += toread
+        address += toread
     end_time = time.time() 
-    print_output(start_time, end_time, address+128)
+    print_output(start_time, end_time, read)
 
-def read_to_stdout(ei):
-
-    start_time = time.time() 
-    for address in range(0,0x2000,128):
-        bytes_ = ei.read_bytes(address, 128)
-        sys.stdout.write(bytes_)
-    end_time = time.time() 
-    print_output(start_time, end_time, address+128)
-            
 def write_from_file(ei, filename):
     start_time = time.time() 
     with open(filename, "rb") as fp:
@@ -33,21 +31,24 @@ def write_from_file(ei, filename):
     end_time = time.time() 
     print_output(start_time, end_time, address)
 
-def fast_write_from_file(ei, filename):
+def fast_write_from_file(ei, fp, skip=0, seek=0, count=0x2000, blocksize=64):
    
     start_time = time.time() 
-    address = 0
-    with open(filename, "rb") as fp:
-        while True:
-            data = fp.read(64)
-            if len(data) == 0:
-                break
-            ei.write_bytes(address, data)
-            address += len(data)
-            if address > 0x1FFF:
-                break
+    address=seek
+    if skip:
+        fp.seek(skip)
+    written = 0
+    while written < count:
+        data = fp.read(blocksize)
+        if len(data) == 0:
+            break
+        ei.write_bytes(address, data)
+        written += len(data)
+        address += len(data)
+        if address > 0x1FFF:
+            break
     end_time = time.time() 
-    print_output(start_time, end_time, address)
+    print_output(start_time, end_time, written)
 
 def print_output(start_time, end_time, size):
     duration = end_time - start_time
@@ -60,7 +61,7 @@ def print_output(start_time, end_time, size):
         nice_speed = "%d B/s" % speed
     else:
         nice_speed = "%.2f kB/s" % (speed/1024.0)
-    print "%d bytes (%s) copied, %.2f s, %s" % (size, nice_size, duration, nice_speed)
+    sys.stderr.write("%d bytes (%s) copied, %.2f s, %s\n" % (size, nice_size, duration, nice_speed))
 
 def erase_chip(ei):
     start_time = time.time() 
@@ -76,6 +77,12 @@ def main():
         help="Input file")
     parser.add_argument("--of", metavar='outputfile', type=str,
         help="Output file")
+    parser.add_argument("--seek", metavar='BYTES', type=int,
+        default=0, help="Skip over BYTES bytes at output")
+    parser.add_argument("--skip", metavar='BYTES', type=int,
+        default=0, help="Skip over BYTES bytes at input")
+    parser.add_argument("--count", metavar='BYTES', type=int,
+        default=0x2000, help="Transfer only BYTES bytes")
     parser.add_argument("--erase", metavar='chipdevice', type=str,
         help="Device file to erase")
     args = parser.parse_args()
@@ -85,18 +92,20 @@ def main():
         if args["if"].startswith("/dev/"):
             # Looks like we're reading from EEPROM to a file
             ei = eedd.EepromInterface(args["if"], 57600)
-            read_to_file(ei, args["of"])
+            with open(args["of"], "wb") as fp:
+                read_to_file(ei, fp, skip=args["skip"], seek=args["seek"], count=args["count"])
         elif args["of"].startswith("/dev/"):
             # Looks like we're writing from a file to EEPROM
             ei = eedd.EepromInterface(args["of"], 57600)
-            fast_write_from_file(ei, args["if"])
+            with open(args["if"], "rb") as fp:
+                fast_write_from_file(ei, fp, skip=args["skip"], seek=args["seek"], count=args["count"])
         else:
             # Buh?
             print "Neither if nor of look like a serial device?"
     elif args["if"] and args["if"].startswith("/dev/"):
         # Looks like we're reading from EEPROM to stdout
         ei = eedd.EepromInterface(args["if"], 57600)
-        read_to_stdout(ei)
+        read_to_file(ei, sys.stdout, seek=args["seek"], count=args["count"])
     elif args["erase"] and args["erase"].startswith("/dev/"):
         ei = eedd.EepromInterface(args["erase"], 57600)
         erase_chip(ei)
