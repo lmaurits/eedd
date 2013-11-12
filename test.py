@@ -52,7 +52,7 @@ def main():
         os.unlink(emptyfile.name)
     elif passed_randtest:
         print "Random write/read test passed, but failed to erase chip! :("
-        print "Read chip contents is in %s" % outputfile.name
+        print "Non-empty chip contents is in %s" % emptyfile.name
         for file_ in (noisefile, outputfile):
             os.unlink(file_.name)
     else:
