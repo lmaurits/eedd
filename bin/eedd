@@ -55,7 +55,12 @@ def print_output(start_time, end_time, size):
         nice_size = "%d B" % size
     else:
         nice_size = "%.2f kB" % (size/1024.0)
-    print "%d bytes (%s) copied, %.2f s, %.2f b/s" % (size, nice_size, duration, size/duration)
+    speed = size/duration
+    if speed < 1024:
+        nice_speed = "%d B/s" % speed
+    else:
+        nice_speed = "%.2f kB/s" % (speed/1024.0)
+    print "%d bytes (%s) copied, %.2f s, %s" % (size, nice_size, duration, nice_speed)
 
 def erase_chip(ei):
     start_time = time.time() 
