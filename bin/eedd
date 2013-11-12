@@ -17,7 +17,7 @@ def read_to_file(ei, fp, skip=0, seek=0, count=0x2000, blocksize=128):
         remainder = count - read
         toread = min(remainder, blocksize)
         if toread == 1:
-            fp.write(ei.read_byte(address, toread))
+            fp.write(ei.read_byte(address))
         else:
             fp.write(ei.read_bytes(address, toread))
         read += toread
