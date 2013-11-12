@@ -16,22 +16,16 @@ def read_to_file(ei, fp, skip=0, seek=0, count=0x2000, blocksize=128):
     while read < count:
         remainder = count - read
         toread = min(remainder, blocksize)
-        fp.write(ei.read_bytes(address, toread))
+        if toread == 1:
+            fp.write(ei.read_byte(address, toread))
+        else:
+            fp.write(ei.read_bytes(address, toread))
         read += toread
         address += toread
     end_time = time.time() 
     print_output(start_time, end_time, read)
 
-def write_from_file(ei, filename):
-    start_time = time.time() 
-    with open(filename, "rb") as fp:
-        data = fp.read()
-    for address, byte in enumerate(data):
-        ei.write_byte(address, byte)
-    end_time = time.time() 
-    print_output(start_time, end_time, address)
-
-def fast_write_from_file(ei, fp, skip=0, seek=0, count=0x2000, blocksize=64):
+def write_from_file(ei, fp, skip=0, seek=0, count=0x2000, blocksize=64):
    
     start_time = time.time() 
     address=seek
@@ -42,7 +36,10 @@ def fast_write_from_file(ei, fp, skip=0, seek=0, count=0x2000, blocksize=64):
         data = fp.read(blocksize)
         if len(data) == 0:
             break
-        ei.write_bytes(address, data)
+        elif len(data) == 1:
+            ei.write_byte(address, data)
+        else:
+            ei.write_bytes(address, data)
         written += len(data)
         address += len(data)
         if address > 0x1FFF:
@@ -98,7 +95,7 @@ def main():
             # Looks like we're writing from a file to EEPROM
             ei = eedd.EepromInterface(args["of"], 57600)
             with open(args["if"], "rb") as fp:
-                fast_write_from_file(ei, fp, skip=args["skip"], seek=args["seek"], count=args["count"])
+                write_from_file(ei, fp, skip=args["skip"], seek=args["seek"], count=args["count"])
         else:
             # Buh?
             print "Neither if nor of look like a serial device?"
