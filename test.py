@@ -17,7 +17,7 @@ def main():
     noise = open(noisefile.name,"rb").read()
     noise_chksum = hashlib.md5(noise).hexdigest()
     chipoutput = open(outputfile.name,"rb").read()
-    output_chksum = hashlib.md5(noise).hexdigest()
+    output_chksum = hashlib.md5(chipoutput).hexdigest()
     passed_randtest = noise_chksum == output_chksum
     if passed_randtest:
         print "files match!"
