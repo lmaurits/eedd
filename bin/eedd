@@ -33,7 +33,7 @@ def write_from_file(ei, fp, skip=0, seek=0, count=0x2000, blocksize=64):
         fp.seek(skip)
     written = 0
     while written < count:
-        data = fp.read(blocksize)
+        data = fp.read(min(count, blocksize))
         if len(data) == 0:
             break
         elif len(data) == 1:
