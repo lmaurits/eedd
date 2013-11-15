@@ -13,12 +13,6 @@ _CLEAR_CHIP_COMMAND = chr(0x33)
 _PARK_COMMAND = chr(0xDB)
 _ERROR_INDICATOR = chr(0xCC)
 
-def handle_verification(verification_byte):
-    if not verification_byte:
-        raise Exception("Communication with serial device timed out.  Protocol violation?")
-    elif verification_byte == _ERROR_INDICATOR:
-        raise Exception("Programmer sent error indicator.  Protocol violation?")
-
 class EepromInterface:
 
     def __init__(self, port, baud=57600):
@@ -28,6 +22,13 @@ class EepromInterface:
 
     def close(self):
         self.ser.close()
+
+    def handle_verification(self):
+        verification_byte = self.ser.read(timeout=5.0)
+        if not verification_byte:
+            raise Exception("Communication with serial device timed out.  Protocol violation?")
+        elif verification_byte == _ERROR_INDICATOR:
+            raise Exception("Programmer sent error indicator.  Protocol violation?")
 
     def read_byte(self, address):
 
@@ -57,7 +58,7 @@ class EepromInterface:
         self.ser.write(addlow)
         self.ser.write(addhi)
         self.ser.write(data)
-        handle_verification(self.ser.read())
+        self.handle_verification()
 
     def write_bytes(self, start_address, data):
 
@@ -68,13 +69,12 @@ class EepromInterface:
         self.ser.write(start_addhi)
         self.ser.write(chr(len(data)))
         self.ser.write(data)
-        handle_verification(self.ser.read())
+        self.handle_verification()
 
     def clear_chip(self):
         self.ser.write(_CLEAR_CHIP_COMMAND)
-        handle_verification(self.ser.read())
+        self.handle_verification()
 
     def park(self):
         self.ser.write(_PARK_COMMAND)
-        handle_verification(self.ser.read())
-
+        self.handle_verification()
