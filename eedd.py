@@ -10,6 +10,7 @@ _READ_MANY_BYTES_COMMAND = chr(0xFF)
 _WRITE_BYTE_COMMAND = chr(0x0F)
 _WRITE_MANY_BYTES_COMMAND = chr(0xF0)
 _CLEAR_CHIP_COMMAND = chr(0x33)
+_PARK_COMMAND = chr(0xDB)
 _ERROR_INDICATOR = chr(0xCC)
 
 def handle_verification(verification_byte):
@@ -24,6 +25,9 @@ class EepromInterface:
 
         self.ser = serial.Serial(port, baud)
         time.sleep(2)
+
+    def close(self):
+        self.ser.close()
 
     def read_byte(self, address):
 
@@ -69,3 +73,8 @@ class EepromInterface:
     def clear_chip(self):
         self.ser.write(_CLEAR_CHIP_COMMAND)
         handle_verification(self.ser.read())
+
+    def park(self):
+        self.ser.write(_PARK_COMMAND)
+        handle_verification(self.ser.read())
+

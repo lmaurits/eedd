@@ -112,5 +112,8 @@ def main():
         ei = eedd.EepromInterface(args["erase"], 57600)
         erase_chip(ei)
 
+    ei.park()
+    ei.close()
+
 if __name__ == "__main__":
     main()
