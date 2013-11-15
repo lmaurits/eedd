@@ -12,6 +12,12 @@ _WRITE_MANY_BYTES_COMMAND = chr(0xF0)
 _CLEAR_CHIP_COMMAND = chr(0x33)
 _ERROR_INDICATOR = chr(0xCC)
 
+def handle_verification(verification_byte):
+    if not verification_byte:
+        raise Exception("Communication with serial device timed out.  Protocol violation?")
+    elif verification_byte == _ERROR_INDICATOR:
+        raise Exception("Programmer sent error indicator.  Protocol violation?")
+
 class EepromInterface:
 
     def __init__(self, port, baud=57600):
@@ -47,9 +53,7 @@ class EepromInterface:
         self.ser.write(addlow)
         self.ser.write(addhi)
         self.ser.write(data)
-        verify = self.ser.read()
-        if verify == _ERROR_INDICATOR:
-            raise Exception()
+        handle_verification(self.ser.read())
 
     def write_bytes(self, start_address, data):
 
@@ -60,12 +64,8 @@ class EepromInterface:
         self.ser.write(start_addhi)
         self.ser.write(chr(len(data)))
         self.ser.write(data)
-        verify = self.ser.read()
-        if verify == _ERROR_INDICATOR:
-            raise Exception()
+        handle_verification(self.ser.read())
 
     def clear_chip(self):
         self.ser.write(_CLEAR_CHIP_COMMAND)
-        verify = self.ser.read()
-        if verify == _ERROR_INDICATOR:
-            raise Exception()
+        handle_verification(self.ser.read())
