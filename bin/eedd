@@ -98,9 +98,6 @@ def main():
             ei = eedd.EepromInterface(args["of"], 57600)
             with open(args["if"], "rb") as fp:
                 write_from_file(ei, fp, skip=args["skip"], seek=args["seek"], count=args["count"], blocksize=args["bs"])
-                # Patch the first byte, which is mysteriously failing...
-                fp.seek(0)
-                write_from_file(ei, fp, count=1, blocksize=1)
         else:
             # Buh?
             print "Neither if nor of look like a serial device?"
