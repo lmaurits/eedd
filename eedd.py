@@ -17,14 +17,17 @@ class EepromInterface:
 
     def __init__(self, port, baud=57600):
 
-        self.ser = serial.Serial(port, baud)
+        self.ser = serial.Serial(port, baud, timeout=3.0)
         time.sleep(2)
 
     def close(self):
         self.ser.close()
 
-    def handle_verification(self):
-        verification_byte = self.ser.read(timeout=5.0)
+    def handle_verification(self, timeout=None):
+        if timeout:
+            self.ser.setTimeout(timeout)
+        verification_byte = self.ser.read()
+        self.ser.setTimeout(3.0)
         if not verification_byte:
             raise Exception("Communication with serial device timed out.  Protocol violation?")
         elif verification_byte == _ERROR_INDICATOR:
@@ -38,6 +41,8 @@ class EepromInterface:
         self.ser.write(addlow)
         self.ser.write(addhi)
         byte = self.ser.read()
+        if not byte:
+            raise Exception("Communication with serial device timed out.  Protocol violation?")
         return byte
 
     def read_bytes(self, start_address, count):
@@ -48,7 +53,10 @@ class EepromInterface:
         self.ser.write(start_addlow)
         self.ser.write(start_addhi)
         self.ser.write(chr(count))
-        return self.ser.read(count)
+        bytes = self.ser.read(count)
+        if not len(bytes):
+            raise Exception("Communication with serial device timed out.  Protocol violation?")
+        return bytes
  
     def write_byte(self, address, data):
 
@@ -73,7 +81,7 @@ class EepromInterface:
 
     def clear_chip(self):
         self.ser.write(_CLEAR_CHIP_COMMAND)
-        self.handle_verification()
+        self.handle_verification(60.0)
 
     def park(self):
         self.ser.write(_PARK_COMMAND)
